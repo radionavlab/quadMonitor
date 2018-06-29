@@ -1,0 +1,19 @@
+<launch>
+  <node pkg="quad_monitor"
+    type="quad_monitor"
+    name="quad_monitor"
+    output="screen">
+
+    <param name="numquads" type="int" value="2"/>
+
+    <param name="quad1" type="string" value="phoenix"/>
+    <param name="quad2" type="string" value="hippogryph"/>
+    <param name="quad3" type="string" value="gryphon"/>
+    <param name="quad4" type="string" value="pegasus"/>
+    <param name="quad5" type="string" value="harry"/>
+    <param name="quad6" type="string" value="ron"/>
+    <param name="quad7" type="string" value="hermione"/>
+    <param name="quad8" type="string" value="luna"/>
+
+  </node>
+</launch>
