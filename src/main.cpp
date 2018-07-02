@@ -27,8 +27,6 @@ void monitorNode::initialize(ros::NodeHandle &nh, std::string &quadname)
                                                         this, ros::TransportHints().unreliable());
     mavPoseSub_ = nh.subscribe("mavros/local_position/pose",1,&monitorNode::attitude2DCallback,
                                                         this, ros::TransportHints().unreliable());
-    odomSub_ = nh.subscribe("local_odom",1,&monitorNode::odomCallback,
-                                                        this, ros::TransportHints().unreliable()); 
     lastSBRTK_=-1.0; lastA2D_=-1.0; lastMavpose_=-1.0; lastMocap_=-1.0;
 
     bool oneshot=false;
@@ -237,11 +235,14 @@ void monitorNode::mavposeCallback(const nav_msgs::Odometry::ConstPtr &msg)
     }
 
     //If on ground and z!=0
-    double speed(math.pow(msg->twist.twist.linear.x,2) + math.pow(msg->twist.twist.linear.y,2) + math.pow(msg->twist.twist.linear.z,2));
-    double zz = msg->pose.pose.position.z;
-    if(speed < 0.2 && (z < -0.10 || z > 0.10))
+    double vx(msg->twist.twist.linear.x);
+    double vy(msg->twist.twist.linear.y);
+    double vz(msg->twist.twist.linear.z);
+    double zz(msg->pose.pose.position.z);
+    double speed(vx*vx + vy*vy + vz*vz);
+    if(speed < 0.2 && (zz < -0.10 || zz > 0.10))
     {
-        if(integerLockCounter%2--0)
+        if(integerLockCounter%2==0)
         {
             ROS_INFO("WARN: %s is stationary but has non-zero altitude",quadname_.c_str());
         }

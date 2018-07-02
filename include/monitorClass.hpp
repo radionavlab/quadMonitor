@@ -31,7 +31,7 @@ class monitorNode
  private:
 
     ros::Publisher monitorPub_;
-    ros::Subscriber rtkSub_, a2dSub_, mavCapSub_, mavPoseSub_, twSub_, odomSub_;
+    ros::Subscriber rtkSub_, a2dSub_, mavCapSub_, mavPoseSub_, twSub_;
     std::string quadname_;
     ros::Timer timerPub_;
     double lastSBRTK_, lastA2D_, lastMavpose_, lastMocap_;
