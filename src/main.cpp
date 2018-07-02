@@ -26,7 +26,9 @@ void monitorNode::initialize(ros::NodeHandle &nh, std::string &quadname)
     mavCapSub_ = nh.subscribe("mavros/mocap/pose",1,&monitorNode::mocapCallback,
                                                         this, ros::TransportHints().unreliable());
     mavPoseSub_ = nh.subscribe("mavros/local_position/pose",1,&monitorNode::attitude2DCallback,
-                                                        this, ros::TransportHints().unreliable());    
+                                                        this, ros::TransportHints().unreliable());
+    odomSub_ = nh.subscribe("local_odom",1,&monitorNode::odomCallback,
+                                                        this, ros::TransportHints().unreliable()); 
     lastSBRTK_=-1.0; lastA2D_=-1.0; lastMavpose_=-1.0; lastMocap_=-1.0;
 
     bool oneshot=false;
@@ -215,6 +217,7 @@ void monitorNode::mavposeCallback(const nav_msgs::Odometry::ConstPtr &msg)
 {
     lastMavpose_ = (ros::Time::now()).toSec();
     static int upsidedownCounter(0);
+    static int integerLockCounter(0);
     
     //Check 3,3 element of R to determine if quad is upside-down
     double qx = msg->pose.pose.orientation.x;
@@ -222,7 +225,7 @@ void monitorNode::mavposeCallback(const nav_msgs::Odometry::ConstPtr &msg)
     double R33 = 1-2*qx*qx - 2*qy*qy;
     if(R33 < -0.7)
     {
-        if(upsidedownCounter%10==0)
+        if(upsidedownCounter%2==0)
         {
             ROS_INFO("ERROR: %s is upside-down",quadname_.c_str());
         }
@@ -232,12 +235,29 @@ void monitorNode::mavposeCallback(const nav_msgs::Odometry::ConstPtr &msg)
         ROS_INFO("Orientation for %s recovered.",quadname_.c_str());
         upsidedownCounter=0;
     }
+
+    //If on ground and z!=0
+    double speed(math.pow(msg->twist.twist.linear.x,2) + math.pow(msg->twist.twist.linear.y,2) + math.pow(msg->twist.twist.linear.z,2));
+    double zz = msg->pose.pose.position.z;
+    if(speed < 0.2 && (z < -0.10 || z > 0.10))
+    {
+        if(integerLockCounter%2--0)
+        {
+            ROS_INFO("WARN: %s is stationary but has non-zero altitude",quadname_.c_str());
+        }
+        integerLockCounter++;
+    }else if(speed <0.2 && integerLockCounter > 0)
+    {
+        ROS_INFO("Integers for %s corrected", quadname_.c_str());
+        integerLockCounter=0;
+    }
 }
 
 
 } //end namespace
 
 
+//Snippet just in case whatever version of std is on the computer does not have it
 std::string to_string( int x ) {
   int length = snprintf( NULL, 0, "%d", x );
   assert( length >= 0 );
