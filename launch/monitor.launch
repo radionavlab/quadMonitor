@@ -4,7 +4,7 @@
     name="quad_monitor"
     output="screen">
 
-    <param name="numquads" type="int" value="2"/>
+    <param name="numquads" type="int" value="1"/>
 
     <param name="quad1" type="string" value="phoenix"/>
     <param name="quad2" type="string" value="hippogryph"/>

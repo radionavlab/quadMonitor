@@ -17,20 +17,23 @@ monitorNode::monitorNode(ros::NodeHandle &nh, std::string &quadname)
 void monitorNode::initialize(ros::NodeHandle &nh, std::string &quadname)
 {
     quadname_ = quadname;
-    rtkSub_ = nh.subscribe("SingleBaselineRTK",1,&monitorNode::singleBaselineRTKCallback,
+    rtkSub_ = nh.subscribe(quadname+"/SingleBaselineRTK",1,&monitorNode::singleBaselineRTKCallback,
                                                         this, ros::TransportHints().unreliable());
-    a2dSub_ = nh.subscribe("Attitude2D",1,&monitorNode::attitude2DCallback,
+    a2dSub_ = nh.subscribe(quadname+"/Attitude2D",1,&monitorNode::attitude2DCallback,
                                                         this, ros::TransportHints().unreliable());
-    twSub_ = nh.subscribe("twUpdate",1,&monitorNode::twCallback,
+    twSub_ = nh.subscribe(quadname+"/ThrustToWeight",1,&monitorNode::twCallback,
                                                         this, ros::TransportHints().unreliable());
-    mavCapSub_ = nh.subscribe("mavros/mocap/pose",1,&monitorNode::mocapCallback,
+    mavCapSub_ = nh.subscribe(quadname+"/mavros/mocap/pose",1,&monitorNode::mocapCallback,
                                                         this, ros::TransportHints().unreliable());
-    mavPoseSub_ = nh.subscribe("mavros/local_position/pose",1,&monitorNode::attitude2DCallback,
+    mavPoseSub_ = nh.subscribe(quadname+"/mavros/local_position/pose",1,&monitorNode::mavposeCallback,
                                                         this, ros::TransportHints().unreliable());
     lastSBRTK_=-1.0; lastA2D_=-1.0; lastMavpose_=-1.0; lastMocap_=-1.0;
 
     bool oneshot=false;
     timerPub_ = nh.createTimer(ros::Duration(1.0), &monitorNode::timerCallback, this, oneshot);
+
+
+    xPrev_(0)=9001;xPrev_(1)=9001;xPrev_(2)=9001;
 }
 
 void monitorNode::timerCallback(const ros::TimerEvent &event)
@@ -53,10 +56,12 @@ void monitorNode::timerCallback(const ros::TimerEvent &event)
     }else if(dta2d > 1.0)
     {
         ROS_INFO("ERROR: A2D missing for %s",quadname_.c_str());
-    }else if(dtmocap > 1.0)
+    }
+    /*else if(dtmocap > 1.0)
     {
         ROS_INFO("ERROR: GPSKF not publishing for %s",quadname_.c_str());
-    }else if(dtmavpose > 1.0)
+    }*/
+    else if(dtmavpose > 1.0)
     {
         ROS_INFO("ERROR: Frame alignment topic missing for %s",quadname_.c_str());
     }
@@ -205,21 +210,20 @@ void monitorNode::twCallback(const gps_kf::twUpdate::ConstPtr &msg)
 }
 
 
-void monitorNode::mocapCallback(const nav_msgs::Odometry::ConstPtr &msg)
+void monitorNode::mocapCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
 {
     lastMocap_ = (ros::Time::now()).toSec();
 }
 
 
-void monitorNode::mavposeCallback(const nav_msgs::Odometry::ConstPtr &msg)
+void monitorNode::mavposeCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
 {
-    lastMavpose_ = (ros::Time::now()).toSec();
     static int upsidedownCounter(0);
     static int integerLockCounter(0);
     
     //Check 3,3 element of R to determine if quad is upside-down
-    double qx = msg->pose.pose.orientation.x;
-    double qy = msg->pose.pose.orientation.y;
+    double qx = msg->pose.orientation.x;
+    double qy = msg->pose.orientation.y;
     double R33 = 1-2*qx*qx - 2*qy*qy;
     if(R33 < -0.7)
     {
@@ -235,23 +239,31 @@ void monitorNode::mavposeCallback(const nav_msgs::Odometry::ConstPtr &msg)
     }
 
     //If on ground and z!=0
-    double vx(msg->twist.twist.linear.x);
-    double vy(msg->twist.twist.linear.y);
-    double vz(msg->twist.twist.linear.z);
-    double zz(msg->pose.pose.position.z);
-    double speed(vx*vx + vy*vy + vz*vz);
-    if(speed < 0.2 && (zz < -0.10 || zz > 0.10))
+    double xx(msg->pose.position.x);
+    double yy(msg->pose.position.y);
+    double zz(msg->pose.position.z);
+    double vx((xx-xPrev_(0))/0.2);
+    double vy((yy-xPrev_(1))/0.2);
+    double vz((zz-xPrev_(2))/0.2);
+    double speed2(vx*vx + vy*vy + vz*vz);
+    if(speed2 < 0.2 && (zz < -0.10 || zz > 0.10))
     {
         if(integerLockCounter%2==0)
         {
             ROS_INFO("WARN: %s is stationary but has non-zero altitude",quadname_.c_str());
         }
         integerLockCounter++;
-    }else if(speed <0.2 && integerLockCounter > 0)
+    }else if(speed2 < 0.2 && integerLockCounter > 0)
     {
         ROS_INFO("Integers for %s corrected", quadname_.c_str());
         integerLockCounter=0;
     }
+    //update xPrev_
+    xPrev_(0)=xx;
+    xPrev_(1)=yy;
+    xPrev_(2)=zz;
+
+    lastMavpose_ = (ros::Time::now()).toSec();
 }
 
 
