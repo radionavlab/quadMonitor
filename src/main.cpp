@@ -103,7 +103,7 @@ void monitorNode::singleBaselineRTKCallback(const gbx_ros_bridge_msgs::SingleBas
     }
 
     //Refnet timeout
-    if(ageOfData > 0.50)
+    if(ageOfData > 5.0)
     {
         if(refnetTimeoutCounter%10==0)
         {
