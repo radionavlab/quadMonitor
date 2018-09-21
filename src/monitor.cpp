@@ -66,6 +66,7 @@ void monitorNode::timerCallback(const ros::TimerEvent &event)
         msg.errorMessages[ij].data = gbxErrorNum[ij];
     }
 
+    errPub_.publish(msg);
     gbxErrorStr.resize(0);
 }
 
