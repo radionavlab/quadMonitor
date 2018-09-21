@@ -1,0 +1,2 @@
+string errType
+double data
