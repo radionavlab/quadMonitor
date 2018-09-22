@@ -3,11 +3,9 @@
 #include <ros/ros.h>
 #include <Eigen/Geometry>
 #include <Eigen/Eigenvalues>
-#include <gbx_ros_bridge_msgs/SingleBaselineRTK.h>
-#include <gbx_ros_bridge_msgs/Attitude2D.h>
-#include <nav_msgs/Odometry.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <gps_kf/twUpdate.h>
+#include "quad_monitor/quadErrorList.h"
+#include "quad_monitor/quadError.h"
+#include "std_msgs/String.h"
 #include <cmath>
 #include <string>
 #include <iostream>
@@ -22,22 +20,15 @@ class monitorNode
     monitorNode(ros::NodeHandle &nh, std::string &quadname);
 
     void initialize(ros::NodeHandle &nh, std::string &quadname);
-    void singleBaselineRTKCallback(const gbx_ros_bridge_msgs::SingleBaselineRTK::ConstPtr &msg);
-    void attitude2DCallback(const gbx_ros_bridge_msgs::Attitude2D::ConstPtr &msg);
-    void twCallback(const gps_kf::twUpdate::ConstPtr &msg);
-    void mocapCallback(const geometry_msgs::PoseStamped::ConstPtr &msg);
-    void mavposeCallback(const geometry_msgs::PoseStamped::ConstPtr &msg);
     void timerCallback(const ros::TimerEvent &event);
+    void listCallback(const quad_monitor::quadErrorList::ConstPtr &msg);
 
  private:
-
-    Eigen::Vector3d xPrev_;
-    ros::Publisher monitorPub_;
-    ros::Subscriber rtkSub_, a2dSub_, mavCapSub_, mavPoseSub_, twSub_;
+    ros::Subscriber statusSub_;
     std::string quadname_;
     ros::Timer timerPub_;
-    double lastSBRTK_, lastA2D_, lastMavpose_, lastMocap_;
-
+    int lastNErr_;
+    bool isHealthy_;
 };
 
 }
