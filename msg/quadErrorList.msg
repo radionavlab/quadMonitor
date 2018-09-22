@@ -1,3 +1,3 @@
-header Header
-int numErrors
-quadError errorMessages[]
+std_msgs/Header Header
+uint8 numErrors
+quadError[] errorMessages

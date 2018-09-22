@@ -62,7 +62,7 @@ void monitorNode::timerCallback(const ros::TimerEvent &event)
     msg.errorMessages.resize(nn);
     for(int ij=0;ij++;ij<nn)
     {
-        msg.errorMessages[ij].errType = gbxErrorStr[ij];
+        msg.errorMessages[ij].errType.data = gbxErrorStr[ij];
         msg.errorMessages[ij].data = gbxErrorNum[ij];
     }
 

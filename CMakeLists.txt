@@ -18,6 +18,8 @@ add_message_files(DIRECTORY msg FILES
     quadErrorList.msg
 )
 
+generate_messages(DEPENDENCIES std_msgs)
+
 catkin_package(
     INCLUDE_DIRS include
     CATKIN_DEPENDS gbx_ros_bridge_msgs message_runtime
